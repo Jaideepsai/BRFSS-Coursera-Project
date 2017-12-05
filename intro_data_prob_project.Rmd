@@ -1,0 +1,96 @@
+---
+title: "Exploring the BRFSS data"
+output:
+  pdf_document: default
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+### Load data
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+
+
+* * *
+
+## Part 1: Data
+The Behavioral Risk Factor Surveillance System (BRFSS) is a project designed to measure behavioral risk factors for non-institutionalized adult population (18 years of age and older) residing in the US. Through, monthly Telephone interviews BRFSS collects data regarding chronic diseases, injuries, and preventable infectious diseases. In addition to landline telephone survey, BRFSS is also conducting cellular telephone based surveys. Few Factors assessed in these surveys include tobacco use, HIV/AIDS, hypertension awareness etc.
+	BRFSS is an observational study as it draws inferences from a sample to a population where the independent variable (health practices and risk behaviors) are not under the control of the researcher. Since 2011, BRFSS is conducting surveys in 2 samples landline telephone and cellular telephone based. In landline Telephone based survey only one adult is randomly selected from the household among stratas(i.e. states- according to survey) .Whereas, in cellular based survey, a person is randomly selected and he/she should reside in a private residence or college housing among stratas(i.e. states according to survey). The survey is a Stratified Sampling and the data also has a N/A row to classify the landline surveyed adults to cellular surveyed adults.
+<h5><u>GENERALIZABILTY:</u></h5>
+Generalizability by definition involves the extent to which the results of a study can be applied beyond the sample to the larger population.BRFSS used random Sampling and It can be generalized to all 50 states in USA and US virgin islands with non-institutionalized adult population of 18 years of age and older having a Telephone Number.
+<h5><u>CAUSALITY:</u></h5>
+Association does not mean causation. As BRFSS is an observational study to measure the health risk factors among individuals. Establishing causation by ruling out the possibility of any lurking variable, or by assuming that individuals differ only with respect to the values of the explanatory variable is difficult. Due to the lurking variables, it is not preferable to establish causation in an observational study.
+
+
+
+
+* * *
+
+## Part 2: Research questions
+
+**Research quesion 1:**
+Is there an association between Used Prescribed Preventative Asthma Med(asthmed3) and Depression (qlmentl2) in Past 30 Days ?
+</br>
+**Research quesion 2:**
+Is there a Co-relation between How Many Hours Per Week Did You Work and Computed Number Of Drinks Of Alcohol Beverages Per Day for males and females?
+</br>
+**Research quesion 3:**
+Is there an association between General Health(genhlth) and How Much Time Do You Sleep(sleptim1???) for males and female(Sex)?
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+**Research quesion 1:**
+
+```{r}
+ brfss2013_Question1<-brfss2013%>%filter(!is.na(qlmentl2),qlmentl2!="NA",!is.na(asthmed3))%>%mutate(depMore=ifelse(qlmentl2=="0","Notdepressed","Depressed"))%>%group_by(asthmed3,depMore)%>%summarise(count=n())
+ggplot(data = brfss2013_Question1, aes(x = asthmed3, y = count, group = depMore, fill = depMore))+ geom_bar(stat = "identity", width = 0.5, position = "dodge")+  theme_bw()+ theme(axis.text.x = element_text(angle = 90))+ scale_fill_discrete(name = "Depression") + xlab("Number of Days Asthma Medication Taken(In Days)") + ylab("Count")
+
+```
+```{r}
+brfss2013%>%filter(!is.na(qlmentl2),qlmentl2!="NA",!is.na(asthmed3))%>%mutate(depMore=ifelse(qlmentl2=="0","Notdepressed","Depressed"))%>%group_by(asthmed3,depMore)%>%summarise(count=n())
+```
+<h5><u>SUMMARY:</u></h5>
+There seems to be a trend between Used Prescribed Preventative Asthma Med and Depression in Past 30 Days .Number of People Reporting Depressed is decreasing with increase in usage of Asthma Med.However, we cannot rule out the possibility that these results may not be related and they may have happened by luck only.
+
+**Research quesion 2:**
+
+```{r}
+brfss2013_Question2 <-brfss2013 %>% filter(X_drnkdy4 != "NA",!is.na(X_drnkdy4),!is.na(sex)) %>% filter(scntlwk1 != "NA")%>%mutate(drinkWeek=X_drnkdy4*7)%>%group_by(scntlwk1,drinkWeek,sex)%>%summarise(count=n())
+ggplot(brfss2013_Question2, aes(x =scntlwk1 , y = log(drinkWeek+1), colour = sex)) + geom_point(shape = 19, alpha = 1/4) + geom_smooth(method = lm, se = FALSE) + scale_colour_discrete(name = "Sex")+ xlab("Number of Hours Worked in per Week") + ylab("Alcohol Beverages Consumption per Week(log)")
+```
+
+```{r}
+brfss2013 %>% filter(X_drnkdy4 != "NA",!is.na(X_drnkdy4),!is.na(sex)) %>% filter(scntlwk1 != "NA")%>%mutate(drinkWeek=X_drnkdy4*7)%>%group_by(scntlwk1,drinkWeek,sex)%>%summarise(count=n())
+```
+<h5><u>Summary:</u></h5>
+As Per the above Statistics and Graph,How Many Hours Per Week Did You Work and Computed Number Of Drinks Of Alcohol Beverages Per Week seem to be related.Even Though the count of People working more than 60 hours is less ,The Computed number of Alcohol drinks in Males is increasing with an increase in Work hours.But on the other hand For Females there is a slight decrease in the computed alcohol drink.However, we cannot rule out the possibility that these results may not be related and they may have happened by luck only. consumption.
+
+**Research quesion 3:**
+
+```{r}
+
+brfss2013_Question3<-brfss2013%>%filter(!is.na(sleptim1),!is.na(genhlth),genhlth=="Excellent"|genhlth=="Poor"|genhlth=="Fair",!is.na(sex))%>%group_by(genhlth,sleptim1,sex)%>%summarise(sum=n())
+ggplot(data = brfss2013_Question3, aes(x = sleptim1, y = sum, group = genhlth, fill = genhlth))+ geom_bar(stat = "identity", width = 0.5, position = "dodge")+ facet_grid(.~sex)+ theme_bw()+ theme(axis.text.x = element_text(angle = 90))+ scale_fill_discrete(name = "GeneralHealth") + xlab("Sleep Time(in hrs)") + ylab("Count")
+
+```
+```{r}
+brfss2013%>%filter(!is.na(sleptim1),!is.na(genhlth),genhlth=="Excellent"|genhlth=="Poor"|genhlth=="Fair",!is.na(sex))%>%group_by(sleptim1,genhlth,sex)%>%summarise(sum=n())
+```
+<h5><u>Summary:</u></h5>
+From the above statistics, How Much Time Do You Sleep  show a trend of doing Poor and fair General Health when Sleep Time is more than 10 hours and less 5 hours for both males and females. Though, here again we cannot tell if this results from a real trend in the data or is merely happening by luck only
